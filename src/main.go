@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	folderPath := "../notes"
+	folderPath := "/notes"
 	notes := getNotes(folderPath)
 
 	fileServer := http.FileServer(http.Dir("../static"))
