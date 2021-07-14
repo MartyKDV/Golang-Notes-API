@@ -2,13 +2,17 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
 func main() {
 
-	notes := newNotesCollection()
+	folderPath := "../notes"
+	notes := getNotes(folderPath)
 
 	fileServer := http.FileServer(http.Dir("../static"))
 
@@ -38,13 +42,42 @@ type notesCollection struct {
 	notes map[string]string
 }
 
-func newNotesCollection() *notesCollection {
+func getNotes(path string) *notesCollection {
 
-	return &notesCollection{
+	var notesFromFiles *notesCollection
+
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+
+		name := path[:len(path)-len(filepath.Ext(path))]
+
+		data, inputErr := ioutil.ReadFile(path)
+
+		if inputErr != nil {
+			fmt.Println(inputErr)
+			return nil
+		}
+
+		notesFromFiles.notes[name] = string(data)
+
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	/*return &notesCollection{
 		notes: map[string]string{
 			"test": "testing message",
 		},
-	}
+	}*/
+
+	return notesFromFiles
 }
 
 func (h *notesCollection) handleAddNote(w http.ResponseWriter, r *http.Request) {
