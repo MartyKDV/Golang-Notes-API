@@ -5,15 +5,16 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 )
 
 func main() {
 
-	folderPath := "/notes"
+	// Path to folder with notes
+	folderPath := "notes"
 	notes := getNotes(folderPath)
 
+	// File server that contains the html files
 	fileServer := http.FileServer(http.Dir("../static"))
 
 	http.Handle("/", fileServer)
@@ -22,7 +23,10 @@ func main() {
 	http.HandleFunc("/editNote", notes.handleEditNote)
 	http.HandleFunc("/deleteNote", notes.handleDeleteNote)
 
+	// Debug to see all notes
 	printNotes(notes)
+
+	// Start server
 	log.Println("Server Has Successfully Started at Port :8080...")
 	err := http.ListenAndServe(":8080", nil)
 
@@ -32,6 +36,7 @@ func main() {
 
 }
 
+// Temp func to print all notes on console - name of note, data of note
 func printNotes(n *notesCollection) {
 	for key, value := range n.notes {
 		fmt.Println(key, value)
@@ -42,44 +47,35 @@ type notesCollection struct {
 	notes map[string]string
 }
 
-func getNotes(path string) *notesCollection {
+// Retrieve all the notes from the folder and return as a notesCollection pointer
+func getNotes(folderPath string) *notesCollection {
 
-	var notesFromFiles *notesCollection
+	var notesFromFiles *notesCollection = &notesCollection{}
+	notesFromFiles.notes = make(map[string]string)
 
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	files, err := ioutil.ReadDir(folderPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+
+		name := file.Name()[:len(file.Name())-len(filepath.Ext(file.Name()))]
+
+		fileName := folderPath + "/" + file.Name()
+		data, err := ioutil.ReadFile(fileName)
 
 		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-
-		name := path[:len(path)-len(filepath.Ext(path))]
-
-		data, inputErr := ioutil.ReadFile(path)
-
-		if inputErr != nil {
-			fmt.Println(inputErr)
-			return nil
+			panic(err)
 		}
 
 		notesFromFiles.notes[name] = string(data)
-
-		return nil
-	})
-
-	if err != nil {
-		panic(err)
 	}
-
-	/*return &notesCollection{
-		notes: map[string]string{
-			"test": "testing message",
-		},
-	}*/
 
 	return notesFromFiles
 }
 
+// Request Handle Functrions
 func (h *notesCollection) handleAddNote(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("name")
