@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
@@ -19,7 +21,7 @@ func main() {
 
 	http.Handle("/", fileServer)
 	http.HandleFunc("/addNote", notes.handleAddNote)
-	http.HandleFunc("/viewNote", notes.handleViewNote)
+	http.HandleFunc("/viewNotes", notes.handleViewNote)
 	http.HandleFunc("/editNote", notes.handleEditNote)
 	http.HandleFunc("/deleteNote", notes.handleDeleteNote)
 
@@ -27,7 +29,7 @@ func main() {
 	printNotes(notes)
 
 	// Start server
-	log.Println("Server Has Successfully Started at Port :8080...")
+	log.Println("Server started listening at port :8080...")
 	err := http.ListenAndServe(":8080", nil)
 
 	if err != nil {
@@ -75,23 +77,85 @@ func getNotes(folderPath string) *notesCollection {
 	return notesFromFiles
 }
 
-// Request Handle Functrions
+// Request Handle Functions
 func (h *notesCollection) handleAddNote(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("name")
 	data := r.FormValue("data")
 
 	h.notes[name] = data
+
+	// Create files - placeholder for DB operations
+	fileName := "notes/" + name + ".txt"
+
+	file, err := os.Create(fileName)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer file.Close()
+
+	io.WriteString(file, data)
+	log.Println("File Created...")
+
+	http.Redirect(w, r, "http://localhost:8080", http.StatusFound)
+
 }
 
 func (h *notesCollection) handleViewNote(w http.ResponseWriter, r *http.Request) {
+
+	for key, value := range h.notes {
+		fmt.Fprintf(w, key+" - "+value+"\n")
+	}
 
 }
 
 func (h *notesCollection) handleEditNote(w http.ResponseWriter, r *http.Request) {
 
+	nameOfNote := r.FormValue("nameOfNote")
+	name := r.FormValue("name")
+	data := r.FormValue("note")
+
+	path := "notes/" + nameOfNote + ".txt"
+
+	if data != "" {
+
+		file, err := os.OpenFile(path, os.O_WRONLY, 0644)
+
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		os.Truncate(path, 0)
+		io.WriteString(file, data)
+		h.notes[nameOfNote] = data
+		file.Sync()
+
+		file.Close()
+	}
+
+	if name != "" {
+		err := os.Rename(path, "notes/"+name+".txt")
+		if err != nil {
+			panic(err)
+		}
+		h.notes[name] = h.notes[nameOfNote]
+		delete(h.notes, nameOfNote)
+	}
+
+	http.Redirect(w, r, "http://localhost:8080", http.StatusFound)
+
 }
 
 func (h *notesCollection) handleDeleteNote(w http.ResponseWriter, r *http.Request) {
 
+	name := r.FormValue("name")
+	path := "notes/" + name + ".txt"
+	os.Remove(path)
+
+	delete(h.notes, name)
+
+	http.Redirect(w, r, "http://localhost:8080", http.StatusFound)
 }
