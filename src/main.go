@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -15,16 +17,18 @@ func main() {
 	jsonPath := "../notes/notes.json"
 	notes := getNotes(jsonPath)
 
+	router := mux.NewRouter()
+
 	fileServer := http.FileServer(http.Dir("../static"))
 
-	http.Handle("/", fileServer)
-	http.HandleFunc("/addNote", notes.handleAddNote)
-	http.HandleFunc("/viewNotes", notes.handleViewNote)
-	http.HandleFunc("/editNote", notes.handleEditNote)
-	http.HandleFunc("/deleteNote", notes.handleDeleteNote)
+	router.Handle("/", fileServer)
+	router.HandleFunc("/addNote", notes.handleAddNote)
+	router.HandleFunc("/viewNotes", notes.handleViewNote)
+	router.HandleFunc("/editNote", notes.handleEditNote)
+	router.HandleFunc("/deleteNote", notes.handleDeleteNote)
 
 	log.Println("Server Has Successfully Started at Port :8080...")
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", router)
 
 	if err != nil {
 		panic(err)
@@ -40,7 +44,7 @@ type Note struct {
 }
 
 type notesCollection struct {
-	notes    []Note
+	notes    map[int]Note
 	fileName string
 }
 
@@ -61,7 +65,7 @@ func getNotes(path string) *notesCollection {
 		panic(err)
 	}
 
-	notesFromFiles.notes = make([]Note, 0)
+	notesFromFiles.notes = make(map[int]Note)
 	notesFromFiles.fileName = path
 
 	json.Unmarshal(file, &notesFromFiles.notes)
@@ -81,7 +85,7 @@ func (h *notesCollection) handleAddNote(w http.ResponseWriter, r *http.Request) 
 	currentTime := time.Now()
 
 	lastIndex := len(h.notes)
-	h.notes = append(h.notes, Note{Data: data, Author: author, TimeCreated: currentTime.Format("2006-01-02 3:4:5 PM"), TimeLastEdited: currentTime.Format("2006-01-02 3:4:5 PM")})
+	h.notes[lastIndex] = Note{Author: author, Data: data, TimeCreated: currentTime.Format("2006-01-02 3:4:5 PM"), TimeLastEdited: currentTime.Format("2006-01-02 3:4:5 PM")}
 	log.Println("Note added: ", h.notes[lastIndex])
 
 	notesBytes, err := json.MarshalIndent(h.notes, "", " ")
@@ -99,6 +103,19 @@ func (h *notesCollection) handleAddNote(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *notesCollection) handleViewNote(w http.ResponseWriter, r *http.Request) {
+
+	for i := range h.notes {
+
+		fmt.Fprintf(w, "--------------------------------------------------------------------------------\n")
+		fmt.Fprintf(w, "Author: "+h.notes[i].Author+"\n")
+		fmt.Fprintf(w, h.notes[i].Data+"\n")
+		fmt.Fprintf(w, "Time Created: "+h.notes[i].TimeCreated+"\nLast Edited:  "+h.notes[i].TimeLastEdited+"\n")
+	}
+	fmt.Fprintf(w, "--------------------------------------------------------------------------------\n")
+
+}
+
+func (h *notesCollection) handleViewNoteByID(w http.ResponseWriter, r *http.Request) {
 
 	for i := range h.notes {
 
