@@ -1,28 +1,28 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
+	"time"
 )
 
 func main() {
 
-	folderPath := "../notes"
-	notes := getNotes(folderPath)
+	jsonPath := "../notes/notes.json"
+	notes := getNotes(jsonPath)
 
 	fileServer := http.FileServer(http.Dir("../static"))
 
 	http.Handle("/", fileServer)
 	http.HandleFunc("/addNote", notes.handleAddNote)
-	http.HandleFunc("/viewNote", notes.handleViewNote)
+	http.HandleFunc("/viewNotes", notes.handleViewNote)
 	http.HandleFunc("/editNote", notes.handleEditNote)
 	http.HandleFunc("/deleteNote", notes.handleDeleteNote)
 
-	printNotes(notes)
 	log.Println("Server Has Successfully Started at Port :8080...")
 	err := http.ListenAndServe(":8080", nil)
 
@@ -32,63 +32,82 @@ func main() {
 
 }
 
-func printNotes(n *notesCollection) {
-	for key, value := range n.notes {
-		fmt.Println(key, value)
-	}
+type Note struct {
+	Data           string `json:"data"`
+	Author         string `json:"author"`
+	TimeCreated    string `json:"time_created"`
+	TimeLastEdited string `json:"time_last_edited"`
 }
 
 type notesCollection struct {
-	notes map[string]string
+	notes    []Note
+	fileName string
 }
 
 func getNotes(path string) *notesCollection {
 
-	var notesFromFiles *notesCollection
+	var notesFromFiles *notesCollection = &notesCollection{}
 
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		_, err := os.Create(path)
 		if err != nil {
-			fmt.Println(err)
-			return nil
+			panic(err)
 		}
+	}
 
-		name := path[:len(path)-len(filepath.Ext(path))]
-
-		data, inputErr := ioutil.ReadFile(path)
-
-		if inputErr != nil {
-			fmt.Println(inputErr)
-			return nil
-		}
-
-		notesFromFiles.notes[name] = string(data)
-
-		return nil
-	})
-
+	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
 
-	/*return &notesCollection{
-		notes: map[string]string{
-			"test": "testing message",
-		},
-	}*/
+	notesFromFiles.notes = make([]Note, 0)
+	notesFromFiles.fileName = path
+
+	json.Unmarshal(file, &notesFromFiles.notes)
+
+	for note := range notesFromFiles.notes {
+
+		log.Println(notesFromFiles.notes[note])
+	}
 
 	return notesFromFiles
 }
 
 func (h *notesCollection) handleAddNote(w http.ResponseWriter, r *http.Request) {
 
-	name := r.FormValue("name")
+	author := r.FormValue("author")
 	data := r.FormValue("data")
+	currentTime := time.Now()
 
-	h.notes[name] = data
+	lastIndex := len(h.notes)
+	h.notes = append(h.notes, Note{Data: data, Author: author, TimeCreated: currentTime.Format("2006-01-02 3:4:5 PM"), TimeLastEdited: currentTime.Format("2006-01-02 3:4:5 PM")})
+	log.Println("Note added: ", h.notes[lastIndex])
+
+	notesBytes, err := json.MarshalIndent(h.notes, "", " ")
+	if err != nil {
+		panic(err)
+	}
+
+	errWriteJSON := ioutil.WriteFile(h.fileName, notesBytes, 0644)
+	if errWriteJSON != nil {
+		panic(errWriteJSON)
+	}
+
+	http.Redirect(w, r, "http://localhost:8080", http.StatusFound)
+
 }
 
 func (h *notesCollection) handleViewNote(w http.ResponseWriter, r *http.Request) {
+
+	for i := range h.notes {
+
+		fmt.Fprintf(w, "--------------------------------------------------------------------------------\n")
+		fmt.Fprintf(w, "Author: "+h.notes[i].Author+"\n")
+		fmt.Fprintf(w, h.notes[i].Data+"\n")
+		fmt.Fprintf(w, "Time Created: "+h.notes[i].TimeCreated+"\nLast Edited:  "+h.notes[i].TimeLastEdited+"\n")
+	}
+	fmt.Fprintf(w, "--------------------------------------------------------------------------------\n")
 
 }
 
