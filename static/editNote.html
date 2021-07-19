@@ -6,10 +6,15 @@
 </head>
 <body>
 	<div>
-		<form method="POST" action="/editNote">     
-		  <label>Name of Note to Change: </label><input name="nameOfNote" type="text" value="" /><br>
-		  <label>Change Name: </label><input name="name" type="text" value="" />
-		  <label>Change Note: </label><input name="note" type="text" value="" />
+	
+		
+		{{$k := .Note}}	
+		{{$a := .Data.Author}}
+		{{$d := .Data.Data}}
+		
+		<form method="PUT" action="/editNoteData/{{$k}}">     
+		  <label>Author: </label><input name="author" type="text" value="{{$a}}" /><br>
+		  <label>Note: </label><input name="data" type="text" value="{{$d}}" />
 		  <input type="submit" value="submit" />
 		</form>
 	</div>
