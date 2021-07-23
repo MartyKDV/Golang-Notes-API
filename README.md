@@ -18,6 +18,14 @@ The current endpoints are as follows:
 
 Example
 =======
+
+Docker run image
+----------------
+
+**When running the image - port forward a port to 8080 for the container (with -p \<host port\>:8080)**  
+
+\----------------------------------------------------------------------------------------------------------------------
+
 **URL: localhost:8080 - Homepage. Navigate to add a note or view notes**
 
 ![Homepage](https://i.ibb.co/6P78KdX/homepage.png)
