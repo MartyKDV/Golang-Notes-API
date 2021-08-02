@@ -30,10 +30,10 @@
 	
 	<div class="container">
 		<h3 style="text-align: center; margin-bottom: 50px;">
-			<a href="http://localhost:8080"> Return to Homepage </a>
+			<a href="/"> Return to Homepage </a>
 		<h3>
 		
-		{{range $k, $v := .}}
+		{{range $v := .}}
 		
 		<h5>
 			<div class="noteContainer">
@@ -44,10 +44,10 @@
 					Last Edited: {{$v.TimeLastEdited}}	<br>
 				</p>
 
-				<form method="GET" action="/details/{{$k}}">    
+				<form method="GET" action="/details/{{$v.Id.Hex}}">  
 				  <input type="submit" value="Edit" />
 				</form>
-				<form method="GET" action="/deleteNote/{{$k}}">    
+				<form method="DELETE" action="/deleteNote/{{$v.Id.Hex}}">    
 				  <input type="submit" value="Delete" />
 				</form>
 			</div>

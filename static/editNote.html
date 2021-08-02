@@ -8,11 +8,11 @@
 	<div>
 	
 		
-		{{$k := .Note}}	
-		{{$a := .Data.Author}}
-		{{$d := .Data.Data}}
+		{{$k := .Id.Hex}}	
+		{{$a := .Author}}
+		{{$d := .Data}}
 		
-		<form method="PUT" action="/editNoteData/{{$k}}">     
+		<form method="PUT" action="/editNote/{{$k}}">     
 		  <label>Author: </label><input name="author" type="text" value="{{$a}}" /><br>
 		  <label>Note: </label><input name="data" type="text" value="{{$d}}" />
 		  <input type="submit" value="submit" />
