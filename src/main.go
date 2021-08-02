@@ -26,7 +26,7 @@ var (
 
 func main() {
 
-	mongoURL = "mongodb://root:aVFZR1VjQlox@mongodb:27017"
+	mongoURL = "mongodb://mongodb:27017"
 	client, err = mongo.NewClient(options.Client().ApplyURI(mongoURL))
 	checkError(err)
 
@@ -105,7 +105,7 @@ func handleAddNote(w http.ResponseWriter, r *http.Request) {
 
 			log.Println(notes)
 
-			http.Redirect(w, r, "http://localhost:8080", http.StatusFound)
+			http.Redirect(w, r, "/", http.StatusFound)
 		}
 
 	case "GET":
