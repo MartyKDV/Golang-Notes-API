@@ -4,7 +4,7 @@ https://github.com/MartyKDV/Golang-Notes-API
 
 Overview
 ------------
-This is a project to create an API that serves to handle notes a person might take. The project has been inspired by my desire to learn the go language and start creating useful applications with it. The current functions of the project are:
+This is a project to create an API that serves to handle notes a person might take. The project has been inspired by my desire to learn the Go language and start creating useful applications with it as a part of my SAP summer practice program. The current functions of the project are:
 
 * Create notes
 * View Notes
